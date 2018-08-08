@@ -1,8 +1,13 @@
 import re
+import warnings
 from argparse import ArgumentParser, ArgumentTypeError
 from dataclasses import dataclass
 
 import requests
+from urllib3.exceptions import InsecureRequestWarning
+
+
+warnings.filterwarnings('ignore', category=InsecureRequestWarning)
 
 
 @dataclass
@@ -20,7 +25,7 @@ class DockerAPIv2:
 
     def _request(self, uri, **kwargs):
         def request(**kwargs_):
-            response_ = requests.get(f'https://{self.address}/v2/{uri}', **kwargs, **kwargs_)
+            response_ = requests.get(f'https://{self.address}/v2/{uri}', verify=False, **kwargs, **kwargs_)
 
             if response_.status_code == 401:
                 entries = response_.headers['www-authenticate'] \
@@ -40,7 +45,10 @@ class DockerAPIv2:
         try:
             return request()
         except Unauthorized as exception:
-            response = requests.get(exception.realm, auth=(self.username, self.password), params={
+            if self.username is None or self.password is None:
+                raise
+
+            response = requests.get(exception.realm, auth=(self.username, self.password), verify=False, params={
                 "service": exception.service,
                 "scope": exception.scope
             })
@@ -56,7 +64,7 @@ class DockerAPIv2:
 
 
 def address_with_credentials(string):
-    match = re.match('^(?P<username>.+?):(?P<password>.+?)@(?P<address>.+?)$', string)
+    match = re.match('(?:^(?P<username>.+?):(?P<password>.+?)@)?(?P<address>.+?)$', string)
 
     if not match:
         raise ArgumentTypeError(f'"{string}" is not a valid connection string')
@@ -80,6 +88,9 @@ if __name__ == '__main__':
 
     source_tags = all_repository_tags(source)
     destination_tags = all_repository_tags(destination)
+
+    print(source_tags)
+    print(destination_tags)
 
     # mirror(source, destination, source_tags)
     # delete(destination, destination_tags - source_tags)
