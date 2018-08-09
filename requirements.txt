@@ -1,2 +1,2 @@
+python-dxf
 requests
-urllib3
