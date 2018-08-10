@@ -1,0 +1,8 @@
+image: python:latest
+
+stages:
+  - mirror
+
+octopus:
+  stage: mirror
+  script: python main.py gitlab-ci-token:$CI_JOB_TOKEN@registry.knowitsolutions.tools --to octopus-registry.knowitsolutions.tools:5000
