@@ -7,4 +7,4 @@ octopus:
   stage: mirror
   script:
     - pip install -r requirements.txt
-    - python main.py gitlab-ci-token:$CI_JOB_TOKEN@registry.knowitsolutions.tools --to octopus-registry.knowitsolutions.tools:5000
+    - python main.py --from gitlab-ci-token:$CI_JOB_TOKEN@registry.knowitsolutions.tools --to octopus-registry.knowitsolutions.tools:5000
