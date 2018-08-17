@@ -2,6 +2,7 @@ import re
 from argparse import ArgumentParser, ArgumentTypeError
 
 from dxf import DXF, DXFBase
+from dxf.exceptions import DXFUnauthorizedError
 from requests import HTTPError
 
 
@@ -36,7 +37,13 @@ for repository in source_repositories:
     source_repository = DXF.from_base(source, repository)
     destination_repository = DXF.from_base(destination, repository)
 
-    for tag in source_repository.list_aliases():
+    try:
+        tags = source_repository.list_aliases()
+    except DXFUnauthorizedError:
+        print(f'Skipping {repository} after being denied access to source repository')
+        continue
+
+    for tag in tags:
         manifest_string, response = source_repository.get_manifest_and_response(tag)
         manifest = response.json()
         source_layers = [manifest['config'], *manifest['layers']]
