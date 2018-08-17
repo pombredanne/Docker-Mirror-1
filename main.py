@@ -78,6 +78,29 @@ for repository in source_repositories:
             print(f'Updating manifest for {repository}:{tag}')
             destination_repository.set_manifest(tag, manifest_string)
 
-# TODO: Delete missing source repositories
-#for repository in destination_repositories:
-#    if repository in source_repositories:
+for repository in destination_repositories:
+    source_repository = DXF.from_base(source, repository)
+    destination_repository = DXF.from_base(destination, repository)
+
+    if repository in source_repositories:
+        try:
+            source_tags = source_repository.list_aliases()
+        except DXFUnauthorizedError:
+            print(f'Assuming {repository} is empty after being denied access to source repository')
+            source_tags = []
+    else:
+        source_tags = []
+
+    try:
+        destination_tags = destination_repository.list_aliases()
+    except DXFUnauthorizedError:
+        print(f'Skipping {repository} after being denied access to destination repository')
+        continue
+
+    for tag in destination_tags:
+        if tag not in source_tags:
+            print(f'Deleting {repository}:{tag} as it is no longer present in source repository')
+            try:
+                destination_repository.del_alias(tag)
+            except HTTPError:
+                print('Destination repository rejected delete')
