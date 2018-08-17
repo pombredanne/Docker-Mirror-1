@@ -1,5 +1,6 @@
 import re
 from argparse import ArgumentParser, ArgumentTypeError
+from collections import namedtuple
 
 from dxf import DXF, DXFBase
 from dxf.exceptions import DXFUnauthorizedError
@@ -18,7 +19,7 @@ def address_with_credentials(string):
         else:
             auth = None
 
-        return DXFBase(match['address'], auth=auth, tlsverify=False)  # TODO: Get tlsverify from arguments instead
+        return namedtuple('AddressWithCredentials', ['address', 'auth'])(match['address'], auth)
     else:
         raise ArgumentTypeError(f'"{string}" is not a valid connection string')
 
@@ -26,11 +27,13 @@ def address_with_credentials(string):
 parser = ArgumentParser(description='Mirror docker repositories')
 parser.add_argument('-f', '--from', required=True, type=address_with_credentials, dest='source')
 parser.add_argument('-t', '--to', required=True, type=address_with_credentials, dest='destination')
+parser.add_argument('-i', '--insecure', action='store_false', dest='tlsverify')
+parser.set_defaults(tlsverify=True)
 args = parser.parse_args()
 
-source = args.source
+source = DXFBase(args.source.address, auth=args.source.auth, tlsverify=args.tlsverify)
 source_repositories = source.list_repos()
-destination = args.destination
+destination = DXFBase(args.destination.address, auth=args.destination.auth, tlsverify=args.tlsverify)
 destination_repositories = destination.list_repos()
 
 for repository in source_repositories:
